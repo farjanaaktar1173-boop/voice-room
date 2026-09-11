@@ -1,308 +1,224 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Room</title>
-    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
-            background-color: #0d0d0d;
-            color: #ffffff;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Voice Room & Live Chat</title>
+  
+  <!-- Agora SDK -->
+  <script src="https://download.agora.io/sdk/web/AgoraRTC_N-4.20.0.js"></script>
 
-        /* Top Bar Info */
-        .top-bar {
-            padding: 10px 15px;
-            background: #1a1a1a;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #333;
-            font-size: 13px;
-        }
-        .status-badge {
-            background: #28a745;
-            color: #fff;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-        }
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
-        /* Seats Layout */
-        .seats-container {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            padding: 20px 10px;
-            background: #141414;
-        }
-        .seat {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-            cursor: pointer;
-        }
-        .avatar-ring {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: 2px solid #ffd700;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #222;
-            font-size: 28px;
-            transition: all 0.3s ease;
-        }
-        .avatar-ring.active {
-            border-color: #00ffcc;
-            box-shadow: 0 0 15px #00ffcc;
-        }
-        .seat-name {
-            margin-top: 6px;
-            font-size: 12px;
-            color: #ccc;
-        }
-        .seat-id {
-            font-size: 10px;
-            color: #ffd700;
-        }
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+    
+    body { background-color: #ffffff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
-        /* Control Buttons */
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            padding: 10px;
-            background: #181818;
-        }
-        .btn {
-            background: #ffd700;
-            color: #000;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 13px;
-            cursor: pointer;
-        }
-        .btn-mic { background: #008cba; color: #fff; }
+    /* Top Section for Voice Seats */
+    .room-container { 
+      display: flex; justify-content: center; gap: 40px; padding: 25px 20px; 
+      border-bottom: 1px solid #f0f0f0; background: #fff;
+    }
+    
+    .seat { display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; }
+    
+    .seat-circle { 
+      width: 70px; height: 70px; border-radius: 50%; background: radial-gradient(circle, #fffdf0 0%, #fef3c7 100%); 
+      display: flex; justify-content: center; align-items: center; margin-bottom: 8px; 
+      border: 3px solid #d97706; outline: 2px solid #fef3c7; box-shadow: 0 4px 10px rgba(217, 119, 6, 0.25); overflow: hidden; 
+    }
+    .seat-circle svg { width: 34px; height: 34px; fill: #b45309; }
+    .seat-circle img { width: 100%; height: 100%; object-fit: cover; }
+    .seat-label { font-size: 14px; font-weight: bold; color: #1f2937; }
 
-        /* Chat Section */
-        .chat-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: #080808;
-            padding: 10px;
-            overflow: hidden;
-        }
-        .chat-box {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding-bottom: 10px;
-        }
-        .chat-msg {
-            background: #1e1e1e;
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: 13px;
-            max-width: 85%;
-            word-break: break-word;
-        }
-        .chat-msg .sender {
-            color: #ffd700;
-            font-weight: bold;
-            font-size: 11px;
-            display: block;
-        }
+    /* আগের মতো সিটের ঠিক নিচে পপ-আপ মেনু */
+    .menu-modal { 
+      display: none; position: absolute; top: 85px; left: 50%; transform: translateX(-50%); 
+      background-color: #ffffff; border-radius: 10px; width: 140px; 
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); border: 1px solid #e5e7eb; z-index: 100; overflow: hidden; 
+    }
+    .menu-modal.active { display: block; }
+    .menu-item { padding: 10px 12px; color: #374151; font-size: 13px; font-weight: bold; cursor: pointer; text-align: center; border-bottom: 1px solid #f3f4f6; }
+    .menu-item:hover { background-color: #f9fafb; }
+    .menu-item.leave { color: #dc2626; border-bottom: none; }
 
-        /* Input Bar Area */
-        .input-bar {
-            display: flex;
-            gap: 8px;
-            padding: 8px;
-            background: #1a1a1a;
-            border-top: 1px solid #333;
-            margin-bottom: 5px;
-        }
-        .input-bar input {
-            flex: 1;
-            background: #2a2a2a;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 10px 14px;
-            border-radius: 20px;
-            outline: none;
-            font-size: 14px;
-        }
-        .input-bar button {
-            background: #ffd700;
-            border: none;
-            color: #000;
-            padding: 0 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-    </style>
+    /* Chat Section */
+    .chat-section { 
+      flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 500px; margin: 0 auto; overflow: hidden; 
+    }
+    
+    .chat-messages { 
+      flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; 
+      padding-bottom: 80px; /* যাতে নিচের লেখার বক্স মেসেজ ঢেকে না ফেলে */
+    }
+    
+    .message-item { 
+      background-color: #f3f4f6; color: #1f2937; padding: 10px 14px; border-radius: 16px; 
+      font-size: 14px; max-width: 80%; word-wrap: break-word; align-self: flex-start; border-bottom-left-radius: 4px; 
+    }
+
+    /* ফিক্সড চ্যাট ইনপুট বক্স (নিচ থেকে হালকা উপরে তোলা হয়েছে) */
+    .chat-input-box { 
+      position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+      width: 92%; max-width: 480px; display: flex; gap: 8px; padding: 8px 12px; 
+      background: #ffffff; border: 1px solid #d1d5db; border-radius: 30px; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 50;
+    }
+    
+    .chat-input-box input { 
+      flex: 1; padding: 8px 12px; border: none; outline: none; font-size: 14px; background: transparent; 
+    }
+    .chat-input-box button { 
+      background-color: #d97706; color: #ffffff; border: none; padding: 8px 16px; 
+      border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 13px; 
+    }
+  </style>
 </head>
 <body>
 
-    <!-- Top Bar -->
-    <div class="top-bar">
-        <div>ভয়েস রুম ID: <strong id="room-id">8821</strong></div>
-        <div class="status-badge" id="status">অফলাইন</div>
+  <!-- Voice Seats Container -->
+  <div class="room-container">
+    <!-- Seat 1 -->
+    <div class="seat" id="seat-1" onclick="toggleMenu(event, 1)">
+      <div class="seat-circle" id="icon-1"><svg viewBox="0 0 24 24"><path d="M20,9V7D20,5.89 19.1,5 18,5H6D4.89,5 4,5.89 4,7V9D2.89,9 2,9.89 2,11V17D2,18.11 2.89,19 4,19V21H6V19H18V21H20V19D21.11,19 22,18.11 22,17V11D22,9.89 21.11,9 20,9M6,7H18V9H6V7M20,17H4V11H20V17Z"/></svg></div>
+      <span class="seat-label" id="label-1">Seat 1</span>
+      
+      <div class="menu-modal" id="menu-1">
+        <div class="menu-item" onclick="takeMic(event, 1)">🎤 Take Mic</div>
+        <div class="menu-item leave" onclick="leaveMic(event, 1)">📴 Leave Mic</div>
+      </div>
     </div>
 
-    <!-- Voice Seats -->
-    <div class="seats-container">
-        <div class="seat" onclick="toggleSeat(1)">
-            <div class="avatar-ring" id="ring-1">🎙️</div>
-            <div class="seat-name" id="name-1">Seat 1 (খালি)</div>
-            <div class="seat-id" id="uid-1">ID: -</div>
-        </div>
-        <div class="seat" onclick="toggleSeat(2)">
-            <div class="avatar-ring" id="ring-2">🛋️</div>
-            <div class="seat-name" id="name-2">Seat 2 (খালি)</div>
-            <div class="seat-id" id="uid-2">ID: -</div>
-        </div>
+    <!-- Seat 2 -->
+    <div class="seat" id="seat-2" onclick="toggleMenu(event, 2)">
+      <div class="seat-circle" id="icon-2"><svg viewBox="0 0 24 24"><path d="M20,9V7D20,5.89 19.1,5 18,5H6D4.89,5 4,5.89 4,7V9D2.89,9 2,9.89 2,11V17D2,18.11 2.89,19 4,19V21H6V19H18V21H20V19D21.11,19 22,18.11 22,17V11D22,9.89 21.11,9 20,9M6,7H18V9H6V7M20,17H4V11H20V17Z"/></svg></div>
+      <span class="seat-label" id="label-2">Seat 2</span>
+      
+      <div class="menu-modal" id="menu-2">
+        <div class="menu-item" onclick="takeMic(event, 2)">🎤 Take Mic</div>
+        <div class="menu-item leave" onclick="leaveMic(event, 2)">📴 Leave Mic</div>
+      </div>
     </div>
+  </div>
 
-    <!-- Controls -->
-    <div class="controls">
-        <button class="btn btn-mic" id="mic-btn" onclick="toggleMic()">🎙️ মাইক অন করুন</button>
+  <!-- Chat Messaging Interface -->
+  <div class="chat-section">
+    <div class="chat-messages" id="chatBox">
+      <div class="message-item">রূমে স্বাগতম! এখানে চ্যাট করতে পারবেন।</div>
     </div>
+  </div>
 
-    <!-- Chat Box -->
-    <div class="chat-section">
-        <div class="chat-box" id="chat-box">
-            <div class="chat-msg">
-                <span class="sender">System</span>
-                ভয়েস রুমে স্বাগতম! মাইক চালু করে কথা বলুন।
-            </div>
-        </div>
-        <div class="input-bar">
-            <input type="text" id="chat-input" placeholder="মেসেজ লিখুন..." onkeypress="handleKeyPress(event)">
-            <button onclick="sendMsg()">Send</button>
-        </div>
-    </div>
+  <!-- Fixed Chat Input Box -->
+  <div class="chat-input-box">
+    <input type="text" id="messageInput" placeholder="মেসেজ লিখুন...">
+    <button onclick="sendMessage()">Send</button>
+  </div>
 
-    <script>
-        const APP_ID = "7419ea365bae4f55aa431aedd5c4cd4c";
-        const CHANNEL = "main-room";
-        let client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-        let localAudioTrack = null;
-        let isJoined = false;
-        let myUid = Math.floor(100000 + Math.random() * 900000); // ৬ ডিজিটের ইউজার আইডি
+  <!-- Script Code -->
+  <script>
+    // Firebase Setup
+    const firebaseConfig = {
+      apiKey: "AIzaSyCTn3QEYtRMxm7Y91RSFSvbRJSRHcXMEdI",
+      authDomain: "room-7fbf7.firebaseapp.com",
+      databaseURL: "https://room-7fbf7-default-rtdb.firebaseio.com",
+      projectId: "room-7fbf7",
+      storageBucket: "room-7fbf7.firebasestorage.app",
+      messagingSenderId: "417946695868",
+      appId: "1:417946695868:web:34c6f63269aaf659b2b8b9"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const chatRef = database.ref('live_chats');
 
-        async function toggleMic() {
-            const micBtn = document.getElementById("mic-btn");
-            const statusBadge = document.getElementById("status");
+    // Agora Setup
+    const APP_ID = "7419ea365bae4f55aa431aedd5c4cd4c";
+    const CHANNEL = "voice-room-1";
+    const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+    let localAudioTrack;
 
-            if (!isJoined) {
-                try {
-                    //১. Agora চ্যানেলে জয়েন
-                    await client.join(APP_ID, CHANNEL, null, myUid);
-                    
-                    //২. মাইকের পারমিশন ও ট্র্যাক তৈরি
-                    localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-                    await client.publish([localAudioTrack]);
+    const sofaSVG = `<svg viewBox="0 0 24 24"><path d="M20,9V7D20,5.89 19.1,5 18,5H6D4.89,5 4,5.89 4,7V9D2.89,9 2,9.89 2,11V17D2,18.11 2.89,19 4,19V21H6V19H18V21H20V19D21.11,19 22,18.11 22,17V11D22,9.89 21.11,9 20,9M6,7H18V9H6V7M20,17H4V11H20V17Z"/></svg>`;
+    const fakeAvatarURL = 'https://i.pravatar.cc/150?img=12';
 
-                    isJoined = true;
-                    micBtn.innerText = "🛑 মাইক অফ করুন";
-                    micBtn.style.background = "#e74c3c";
-                    statusBadge.innerText = "অনলাইন (লাইভ)";
-                    statusBadge.style.background = "#28a745";
+    // সিটে ক্লিক করলে মেনু দেখানো বা লুকানো
+    function toggleMenu(event, seatId) {
+      event.stopPropagation();
+      const currentMenu = document.getElementById(`menu-${seatId}`);
+      
+      // অন্য সব মেনু বন্ধ করা
+      document.querySelectorAll('.menu-modal').forEach(menu => {
+        if (menu !== currentMenu) menu.classList.remove('active');
+      });
+      
+      // বর্তমান মেনু টগল করা
+      currentMenu.classList.toggle('active');
+    }
 
-                    // Seat 1-এ আইডি ও নাম বসানো
-                    document.getElementById("name-1").innerText = "আপনি";
-                    document.getElementById("uid-1").innerText = "ID: " + myUid;
-                    document.getElementById("ring-1").classList.add("active");
+    // স্ক্রিনের যেকোনো জায়গায় ক্লিক করলে মেনু বন্ধ হয়ে যাবে
+    document.addEventListener('click', function() {
+      document.querySelectorAll('.menu-modal').forEach(menu => menu.classList.remove('active'));
+    });
 
-                    addSystemMsg("আপনার মাইক যুক্ত হয়েছে। আইডি: " + myUid);
-                } catch (err) {
-                    console.error("Mic error:", err);
-                    alert("মাইক অ্যাক্সেস করার অনুমতি বা ব্রাউজার পারমিশন দেওয়া হয়নি!");
-                }
-            } else {
-                // মাইক ডিসকানেক্ট
-                if (localAudioTrack) {
-                    localAudioTrack.close();
-                }
-                await client.leave();
-                isJoined = false;
+    // মাইক অন করা (Take Mic)
+    async function takeMic(event, seatId) {
+      event.stopPropagation();
+      try {
+        await client.join(APP_ID, CHANNEL, null, null);
+        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        await client.publish([localAudioTrack]);
 
-                micBtn.innerText = "🎙️ মাইক অন করুন";
-                micBtn.style.background = "#008cba";
-                statusBadge.innerText = "অফলাইন";
-                statusBadge.style.background = "#666";
+        document.getElementById(`icon-${seatId}`).innerHTML = `<img src="${fakeAvatarURL}" alt="User">`;
+        document.getElementById(`label-${seatId}`).innerText = 'Speaking';
+        document.getElementById(`menu-${seatId}`).classList.remove('active');
+      } catch (error) { 
+        console.error(error); 
+        alert("মাইক অন করতে সমস্যা হচ্ছে!");
+      }
+    }
 
-                document.getElementById("name-1").innerText = "Seat 1 (খালি)";
-                document.getElementById("uid-1").innerText = "ID: -";
-                document.getElementById("ring-1").classList.remove("active");
+    // মাইক বন্ধ করা (Leave Mic)
+    async function leaveMic(event, seatId) {
+      event.stopPropagation();
+      if (localAudioTrack) { localAudioTrack.close(); }
+      await client.leave();
+      
+      document.getElementById(`icon-${seatId}`).innerHTML = sofaSVG;
+      document.getElementById(`label-${seatId}`).innerText = "Seat " + seatId;
+      document.getElementById(`menu-${seatId}`).classList.remove('active');
+    }
 
-                addSystemMsg("আপনি মাইক বন্ধ করেছেন।");
-            }
-        }
+    // অন্যের কথা শোনা
+    client.on("user-published", async (user, mediaType) => {
+      await client.subscribe(user, mediaType);
+      if (mediaType === "audio") { user.audioTrack.play(); }
+    });
 
-        // রিমোট ব্যবহারকারীদের অডিও শোনা
-        client.on("user-published", async (user, mediaType) => {
-            await client.subscribe(user, mediaType);
-            if (mediaType === "audio") {
-                user.audioTrack.play();
-                document.getElementById("name-2").innerText = "User " + user.uid;
-                document.getElementById("uid-2").innerText = "ID: " + user.uid;
-                document.getElementById("ring-2").classList.add("active");
-            }
-        });
+    // মেসেজ পাঠানো
+    function sendMessage() {
+      const input = document.getElementById('messageInput');
+      if (input.value.trim() !== "") {
+        chatRef.push({ text: input.value, timestamp: Date.now() });
+        input.value = "";
+      }
+    }
 
-        client.on("user-unpublished", (user) => {
-            document.getElementById("name-2").innerText = "Seat 2 (খালি)";
-            document.getElementById("uid-2").innerText = "ID: -";
-            document.getElementById("ring-2").classList.remove("active");
-        });
+    // Enter প্রেস করলে মেসেজ পাঠানো
+    document.getElementById('messageInput').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') sendMessage();
+    });
 
-        // চ্যাট ফাংশন
-        function sendMsg() {
-            const input = document.getElementById("chat-input");
-            const text = input.value.trim();
-            if (text === "") return;
-
-            const chatBox = document.getElementById("chat-box");
-            const msgDiv = document.createElement("div");
-            msgDiv.className = "chat-msg";
-            msgDiv.innerHTML = `<span class="sender">User (${myUid})</span>${text}`;
-            
-            chatBox.appendChild(msgDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-            input.value = "";
-        }
-
-        function handleKeyPress(e) {
-            if (e.key === 'Enter') sendMsg();
-        }
-
-        function addSystemMsg(msg) {
-            const chatBox = document.getElementById("chat-box");
-            const msgDiv = document.createElement("div");
-            msgDiv.className = "chat-msg";
-            msgDiv.innerHTML = `<span class="sender" style="color:#00ffcc;">System</span>${msg}`;
-            chatBox.appendChild(msgDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-    </script>
+    // ফায়ারবেস থেকে লাইভ চ্যাট মেসেজ রিসিভ করা
+    const chatBox = document.getElementById('chatBox');
+    chatRef.on('child_added', (snapshot) => {
+      const data = snapshot.val();
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message-item'; 
+      msgDiv.innerText = data.text;
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+  </script>
 </body>
 </html>
