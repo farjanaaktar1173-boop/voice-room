@@ -1,224 +1,161 @@
+
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Voice Room & Live Chat</title>
-  
-  <!-- Agora SDK -->
-  <script src="https://download.agora.io/sdk/web/AgoraRTC_N-4.20.0.js"></script>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
-
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
-    
-    body { background-color: #ffffff; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
-    /* Top Section for Voice Seats */
-    .room-container { 
-      display: flex; justify-content: center; gap: 40px; padding: 25px 20px; 
-      border-bottom: 1px solid #f0f0f0; background: #fff;
-    }
-    
-    .seat { display: flex; flex-direction: column; align-items: center; cursor: pointer; position: relative; }
-    
-    .seat-circle { 
-      width: 70px; height: 70px; border-radius: 50%; background: radial-gradient(circle, #fffdf0 0%, #fef3c7 100%); 
-      display: flex; justify-content: center; align-items: center; margin-bottom: 8px; 
-      border: 3px solid #d97706; outline: 2px solid #fef3c7; box-shadow: 0 4px 10px rgba(217, 119, 6, 0.25); overflow: hidden; 
-    }
-    .seat-circle svg { width: 34px; height: 34px; fill: #b45309; }
-    .seat-circle img { width: 100%; height: 100%; object-fit: cover; }
-    .seat-label { font-size: 14px; font-weight: bold; color: #1f2937; }
-
-    /* আগের মতো সিটের ঠিক নিচে পপ-আপ মেনু */
-    .menu-modal { 
-      display: none; position: absolute; top: 85px; left: 50%; transform: translateX(-50%); 
-      background-color: #ffffff; border-radius: 10px; width: 140px; 
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); border: 1px solid #e5e7eb; z-index: 100; overflow: hidden; 
-    }
-    .menu-modal.active { display: block; }
-    .menu-item { padding: 10px 12px; color: #374151; font-size: 13px; font-weight: bold; cursor: pointer; text-align: center; border-bottom: 1px solid #f3f4f6; }
-    .menu-item:hover { background-color: #f9fafb; }
-    .menu-item.leave { color: #dc2626; border-bottom: none; }
-
-    /* Chat Section */
-    .chat-section { 
-      flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 500px; margin: 0 auto; overflow: hidden; 
-    }
-    
-    .chat-messages { 
-      flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; 
-      padding-bottom: 80px; /* যাতে নিচের লেখার বক্স মেসেজ ঢেকে না ফেলে */
-    }
-    
-    .message-item { 
-      background-color: #f3f4f6; color: #1f2937; padding: 10px 14px; border-radius: 16px; 
-      font-size: 14px; max-width: 80%; word-wrap: break-word; align-self: flex-start; border-bottom-left-radius: 4px; 
-    }
-
-    /* ফিক্সড চ্যাট ইনপুট বক্স (নিচ থেকে হালকা উপরে তোলা হয়েছে) */
-    .chat-input-box { 
-      position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
-      width: 92%; max-width: 480px; display: flex; gap: 8px; padding: 8px 12px; 
-      background: #ffffff; border: 1px solid #d1d5db; border-radius: 30px; 
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 50;
-    }
-    
-    .chat-input-box input { 
-      flex: 1; padding: 8px 12px; border: none; outline: none; font-size: 14px; background: transparent; 
-    }
-    .chat-input-box button { 
-      background-color: #d97706; color: #ffffff; border: none; padding: 8px 16px; 
-      border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 13px; 
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ভয়েস চ্যাট রুম</title>
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.18.2.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f6f9;
+            margin-top: 50px;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 30px;
+        }
+        .room-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+        .circle-btn {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background-color: #e4e6eb;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .circle-btn svg {
+            width: 40px;
+            height: 40px;
+            fill: #65676b;
+        }
+        .room-label {
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        .controls {
+            margin-top: 40px;
+        }
+        .leave-btn {
+            background-color: #ff3b30;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        .status {
+            margin-top: 20px;
+            font-size: 15px;
+            color: #d9534f;
+            font-weight: bold;
+            padding: 0 20px;
+        }
+    </style>
 </head>
 <body>
 
-  <!-- Voice Seats Container -->
-  <div class="room-container">
-    <!-- Seat 1 -->
-    <div class="seat" id="seat-1" onclick="toggleMenu(event, 1)">
-      <div class="seat-circle" id="icon-1"><svg viewBox="0 0 24 24"><path d="M20,9V7D20,5.89 19.1,5 18,5H6D4.89,5 4,5.89 4,7V9D2.89,9 2,9.89 2,11V17D2,18.11 2.89,19 4,19V21H6V19H18V21H20V19D21.11,19 22,18.11 22,17V11D22,9.89 21.11,9 20,9M6,7H18V9H6V7M20,17H4V11H20V17Z"/></svg></div>
-      <span class="seat-label" id="label-1">Seat 1</span>
-      
-      <div class="menu-modal" id="menu-1">
-        <div class="menu-item" onclick="takeMic(event, 1)">🎤 Take Mic</div>
-        <div class="menu-item leave" onclick="leaveMic(event, 1)">📴 Leave Mic</div>
-      </div>
+    <h2>ভয়েস চ্যাট রুম সিস্টেম</h2>
+    <p>কথা বলতে যেকোনো একটি রুমে ক্লিক করুন</p>
+
+    <div class="container">
+        <!-- রুম ৪ -->
+        <div class="room-box" onclick="joinRoom('room_4', '৪')">
+            <button class="circle-btn">
+                <svg viewBox="0 0 24 24"><path d="M20 9.5V7c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v2.5c-1.4 0-2.5 1.1-2.5 2.5v3c0 1.4 1.1 2.5 2.5 2.5h1v2c0 .55.45 1 1 1s1-.45 1-1v-2h12v2c0 .55.45 1 1 1s1-.45 1-1v-2h1c1.4 0 2.5-1.1 2.5-2.5v-3c0-1.4-1.1-2.5-2.5-2.5zM6 7h12v2.12c-.59.55-1 1.33-1 2.21v1H7v-1c0-.88-.41-1.66-1-2.21V7zm14 8H4v-3c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v3z"/></svg>
+            </button>
+            <span class="room-label">৪</span>
+        </div>
+
+        <!-- রুম ৫ -->
+        <div class="room-box" onclick="joinRoom('room_5', '৫')">
+            <button class="circle-btn">
+                <svg viewBox="0 0 24 24"><path d="M20 9.5V7c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v2.5c-1.4 0-2.5 1.1-2.5 2.5v3c0 1.4 1.1 2.5 2.5 2.5h1v2c0 .55.45 1 1 1s1-.45 1-1v-2h12v2c0 .55.45 1 1 1s1-.45 1-1v-2h1c1.4 0 2.5-1.1 2.5-2.5v-3c0-1.4-1.1-2.5-2.5-2.5zM6 7h12v2.12c-.59.55-1 1.33-1 2.21v1H7v-1c0-.88-.41-1.66-1-2.21V7zm14 8H4v-3c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v3z"/></svg>
+            </button>
+            <span class="room-label">৫</span>
+        </div>
     </div>
 
-    <!-- Seat 2 -->
-    <div class="seat" id="seat-2" onclick="toggleMenu(event, 2)">
-      <div class="seat-circle" id="icon-2"><svg viewBox="0 0 24 24"><path d="M20,9V7D20,5.89 19.1,5 18,5H6D4.89,5 4,5.89 4,7V9D2.89,9 2,9.89 2,11V17D2,18.11 2.89,19 4,19V21H6V19H18V21H20V19D21.11,19 22,18.11 22,17V11D22,9.89 21.11,9 20,9M6,7H18V9H6V7M20,17H4V11H20V17Z"/></svg></div>
-      <span class="seat-label" id="label-2">Seat 2</span>
-      
-      <div class="menu-modal" id="menu-2">
-        <div class="menu-item" onclick="takeMic(event, 2)">🎤 Take Mic</div>
-        <div class="menu-item leave" onclick="leaveMic(event, 2)">📴 Leave Mic</div>
-      </div>
+    <div class="status" id="statusText"></div>
+
+    <div class="controls">
+        <button id="leaveBtn" class="leave-btn" onclick="leaveRoom()">কল কেটে দিন</button>
     </div>
-  </div>
 
-  <!-- Chat Messaging Interface -->
-  <div class="chat-section">
-    <div class="chat-messages" id="chatBox">
-      <div class="message-item">রূমে স্বাগতম! এখানে চ্যাট করতে পারবেন।</div>
-    </div>
-  </div>
+    <script>
+        const APP_ID = "7419ea365bae4f55aa431aedd5c4cd4c";
+        const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+        let localAudioTrack = null;
+        let currentRoom = null;
 
-  <!-- Fixed Chat Input Box -->
-  <div class="chat-input-box">
-    <input type="text" id="messageInput" placeholder="মেসেজ লিখুন...">
-    <button onclick="sendMessage()">Send</button>
-  </div>
+        async function joinRoom(roomName, roomNum) {
+            if (currentRoom) {
+                alert("আপনি ইতিমধ্যেই একটি রুমে আছেন। প্রথমে কল কেটে দিন।");
+                return;
+            }
 
-  <!-- Script Code -->
-  <script>
-    // Firebase Setup
-    const firebaseConfig = {
-      apiKey: "AIzaSyCTn3QEYtRMxm7Y91RSFSvbRJSRHcXMEdI",
-      authDomain: "room-7fbf7.firebaseapp.com",
-      databaseURL: "https://room-7fbf7-default-rtdb.firebaseio.com",
-      projectId: "room-7fbf7",
-      storageBucket: "room-7fbf7.firebasestorage.app",
-      messagingSenderId: "417946695868",
-      appId: "1:417946695868:web:34c6f63269aaf659b2b8b9"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-    const chatRef = database.ref('live_chats');
+            try {
+                document.getElementById("statusText").style.color = "#007aff";
+                document.getElementById("statusText").innerText = `রুম ${roomNum}-এ যুক্ত হওয়া হচ্ছে...`;
+                
+                await client.join(APP_ID, roomName, null, null);
+                
+                localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+                await client.publish([localAudioTrack]);
+                
+                currentRoom = roomNum;
+                document.getElementById("statusText").style.color = "green";
+                document.getElementById("statusText").innerText = `রুম ${roomNum}-এ যুক্ত আছেন। কথা বলতে পারেন।`;
+                document.getElementById("leaveBtn").style.display = "inline-block";
 
-    // Agora Setup
-    const APP_ID = "7419ea365bae4f55aa431aedd5c4cd4c";
-    const CHANNEL = "voice-room-1";
-    const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-    let localAudioTrack;
+                client.on("user-published", async (user, mediaType) => {
+                    await client.subscribe(user, mediaType);
+                    if (mediaType === "audio") {
+                        user.audioTrack.play();
+                    }
+                });
 
-    const sofaSVG = `<svg viewBox="0 0 24 24"><path d="M20,9V7D20,5.89 19.1,5 18,5H6D4.89,5 4,5.89 4,7V9D2.89,9 2,9.89 2,11V17D2,18.11 2.89,19 4,19V21H6V19H18V21H20V19D21.11,19 22,18.11 22,17V11D22,9.89 21.11,9 20,9M6,7H18V9H6V7M20,17H4V11H20V17Z"/></svg>`;
-    const fakeAvatarURL = 'https://i.pravatar.cc/150?img=12';
+            } catch (error) {
+                console.error("রুমের সাথে যুক্ত হতে সমস্যা হয়েছে:", error);
+                document.getElementById("statusText").style.color = "#d9534f";
+                document.getElementById("statusText").innerText = "কানেক্ট করতে ব্যর্থ হয়েছে! কারণ: " + error.message;
+            }
+        }
 
-    // সিটে ক্লিক করলে মেনু দেখানো বা লুকানো
-    function toggleMenu(event, seatId) {
-      event.stopPropagation();
-      const currentMenu = document.getElementById(`menu-${seatId}`);
-      
-      // অন্য সব মেনু বন্ধ করা
-      document.querySelectorAll('.menu-modal').forEach(menu => {
-        if (menu !== currentMenu) menu.classList.remove('active');
-      });
-      
-      // বর্তমান মেনু টগল করা
-      currentMenu.classList.toggle('active');
-    }
+        async function leaveRoom() {
+            try {
+                if (localAudioTrack) {
+                    localAudioTrack.stop();
+                    localAudioTrack.close();
+                    localAudioTrack = null;
+                }
+                await client.leave();
+                
+                document.getElementById("statusText").style.color = "#333";
+                document.getElementById("statusText").innerText = "কল কেটে দেওয়া হয়েছে।";
+                document.getElementById("leaveBtn").style.display = "none";
+                currentRoom = null;
+            } catch (error) {
+                console.error("রুম ছাড়তে সমস্যা হয়েছে:", error);
+            }
+        }
+    </script>
 
-    // স্ক্রিনের যেকোনো জায়গায় ক্লিক করলে মেনু বন্ধ হয়ে যাবে
-    document.addEventListener('click', function() {
-      document.querySelectorAll('.menu-modal').forEach(menu => menu.classList.remove('active'));
-    });
-
-    // মাইক অন করা (Take Mic)
-    async function takeMic(event, seatId) {
-      event.stopPropagation();
-      try {
-        await client.join(APP_ID, CHANNEL, null, null);
-        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-        await client.publish([localAudioTrack]);
-
-        document.getElementById(`icon-${seatId}`).innerHTML = `<img src="${fakeAvatarURL}" alt="User">`;
-        document.getElementById(`label-${seatId}`).innerText = 'Speaking';
-        document.getElementById(`menu-${seatId}`).classList.remove('active');
-      } catch (error) { 
-        console.error(error); 
-        alert("মাইক অন করতে সমস্যা হচ্ছে!");
-      }
-    }
-
-    // মাইক বন্ধ করা (Leave Mic)
-    async function leaveMic(event, seatId) {
-      event.stopPropagation();
-      if (localAudioTrack) { localAudioTrack.close(); }
-      await client.leave();
-      
-      document.getElementById(`icon-${seatId}`).innerHTML = sofaSVG;
-      document.getElementById(`label-${seatId}`).innerText = "Seat " + seatId;
-      document.getElementById(`menu-${seatId}`).classList.remove('active');
-    }
-
-    // অন্যের কথা শোনা
-    client.on("user-published", async (user, mediaType) => {
-      await client.subscribe(user, mediaType);
-      if (mediaType === "audio") { user.audioTrack.play(); }
-    });
-
-    // মেসেজ পাঠানো
-    function sendMessage() {
-      const input = document.getElementById('messageInput');
-      if (input.value.trim() !== "") {
-        chatRef.push({ text: input.value, timestamp: Date.now() });
-        input.value = "";
-      }
-    }
-
-    // Enter প্রেস করলে মেসেজ পাঠানো
-    document.getElementById('messageInput').addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') sendMessage();
-    });
-
-    // ফায়ারবেস থেকে লাইভ চ্যাট মেসেজ রিসিভ করা
-    const chatBox = document.getElementById('chatBox');
-    chatRef.on('child_added', (snapshot) => {
-      const data = snapshot.val();
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'message-item'; 
-      msgDiv.innerText = data.text;
-      chatBox.appendChild(msgDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    });
-  </script>
 </body>
 </html>
