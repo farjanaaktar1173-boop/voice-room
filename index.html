@@ -93,7 +93,17 @@
     .emoji-picker span{font-size:22px;cursor:pointer;text-align:center;border-radius:10px;padding:3px 0;transition:transform .18s;}
     .emoji-picker span:hover{transform:scale(1.4) rotate(-10deg);background:rgba(255,255,255,.1);}
 
-    /* ============ CALL UI ============ */
+    /* ========== ZEGOCLOUD Call Container ========== */
+    #zegoContainer{
+        position:fixed;
+        inset:0;
+        z-index:2100;
+        background:#0a0818;
+        display:none;
+    }
+    #zegoContainer.show{display:block;}
+
+    /* ========== Incoming Call Modal ========== */
     .call-overlay{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 0%,#1e1740 0%,#08071a 70%);}
     .call-overlay.show{display:flex;animation:fadeIn .3s ease both;}
     @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
@@ -113,30 +123,6 @@
     @keyframes acceptPulse{0%,100%{box-shadow:0 12px 28px rgba(34,197,94,.5);}50%{box-shadow:0 12px 40px rgba(34,197,94,.9);}}
     .call-btn:hover{transform:scale(1.12);}
     .call-btn:active{transform:scale(.9);}
-
-    /* Active call screen */
-    .active-call{position:fixed;inset:0;z-index:2100;display:none;background:#0a0818;}
-    .active-call.show{display:block;}
-    #remoteVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#0a0818;z-index:1;}
-    #localVideo{position:absolute;top:16px;right:16px;width:110px;height:150px;border-radius:16px;object-fit:cover;border:2px solid rgba(255,255,255,.3);box-shadow:0 10px 26px rgba(0,0,0,.6);z-index:3;background:#1a1730;}
-    .active-call.audio-mode #remoteVideo{background:radial-gradient(circle at 50% 40%,#2a2258 0%,#0a0818 70%);}
-    .active-call.audio-mode #localVideo{display:none;}
-    .call-top{position:absolute;top:0;left:0;right:0;padding:16px 20px;z-index:4;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(to bottom,rgba(0,0,0,.55),transparent);}
-    .call-top .name{font-size:16px;font-weight:600;}
-    .call-top .status{font-size:12px;color:#7fe6ff;margin-top:2px;}
-    .call-controls{position:absolute;bottom:36px;left:0;right:0;display:flex;justify-content:center;gap:18px;z-index:4;}
-    .ctrl-btn{width:60px;height:60px;border-radius:50%;border:none;color:#fff;font-size:20px;cursor:pointer;display:grid;place-items:center;background:rgba(255,255,255,.14);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.18);box-shadow:0 10px 26px rgba(0,0,0,.5);transition:.22s cubic-bezier(.2,.8,.2,1.4);}
-    .ctrl-btn:hover{transform:scale(1.1);background:rgba(255,255,255,.24);}
-    .ctrl-btn:active{transform:scale(.9);}
-    .ctrl-btn.muted{background:linear-gradient(135deg,#ef4444,#dc2626);}
-    .ctrl-btn.end{background:linear-gradient(135deg,#ef4444,#b91c1c);width:70px;height:70px;font-size:24px;}
-    .ctrl-btn.end:hover{transform:scale(1.12) rotate(8deg);}
-    .audio-avatar{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:2;display:none;}
-    .active-call.audio-mode .audio-avatar{display:block;}
-    .audio-avatar .big-av{width:140px;height:140px;border-radius:50%;margin:0 auto 20px;position:relative;}
-    .audio-avatar .big-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:3px solid rgba(106,92,255,.7);}
-    .audio-avatar .big-av::before{content:'';position:absolute;inset:-12px;border-radius:50%;border:2px solid rgba(106,92,255,.5);animation:ringPulse 1.8s ease-out infinite;}
-    .audio-avatar h2{font-size:22px;color:#fff;font-weight:700;}
 </style>
 </head><body>
 
@@ -219,6 +205,9 @@
     </div>
 </div>
 
+<!-- ========== ZEGOCLOUD CALL CONTAINER (এখানে কল UI রেন্ডার হবে) ========== -->
+<div id="zegoContainer"></div>
+
 <!-- ========== INCOMING CALL MODAL ========== -->
 <div class="call-overlay" id="incomingOverlay">
     <div class="incoming-card">
@@ -231,36 +220,16 @@
             <button class="call-btn accept" onclick="acceptCall()"><i class="fa-solid fa-phone"></i></button>
         </div>
     </div>
-</div>
-
-<!-- ========== ACTIVE CALL SCREEN ========== -->
-<div class="active-call" id="activeCallScreen">
-    <div id="remoteVideo"></div>
-    <div id="localVideo"></div>
-
-    <div class="audio-avatar">
-        <div class="big-av"><img id="callerAvatarBig" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200"></div>
-        <h2 id="audioName">Calling...</h2>
-    </div>
-
-    <div class="call-top">
-        <div>
-            <div class="name" id="activeCallName">Call</div>
-            <div class="status" id="activeCallStatus">Connecting...</div>
-        </div>
-    </div>
-
-    <div class="call-controls">
-        <button class="ctrl-btn" id="muteBtn" onclick="toggleMute()"><i class="fa-solid fa-microphone"></i></button>
-        <button class="ctrl-btn end" onclick="endCall()"><i class="fa-solid fa-phone-slash"></i></button>
-        <button class="ctrl-btn" id="camBtn" onclick="toggleCamera()"><i class="fa-solid fa-video"></i></button>
-    </div>
-</div><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+</div><!-- ZEGOCLOUD Prebuilt SDK -->
+<script src="https://unpkg.com/@zegocloud/zego-uikit-prebuilt/zego-uikit-prebuilt.js"></script>
+<!-- Firebase Compat SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.20.0.js"></script>
 <script>
-/* ============ CONFIG ============ */
-const AGORA_APP_ID = "7419ea365bae4f55aa431aedd5c4cd4c";
+/* ================== CONFIG ================== */
+const ZEGO_APP_ID = 579509415;
+const ZEGO_SERVER_SECRET = "7e9fb9d01bcf718cb27b3f29aa3e2e827286af3f0a3a8d88bf45752d89133f9f";
+const VOICE_ROOM_ID = "main-room"; /* সবাই একই রুমে যোগ দেবে */
 
 const firebaseConfig = {
     apiKey: "AIzaSyCTn3QEYtRMxm7Y91RSFSvbRJSRHcXMEdI",
@@ -274,18 +243,18 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const chatRef = db.ref('chats');
-const callsRef = db.ref('calls');
+const callSignalRef = db.ref('callSignal');
 const chatBody = document.getElementById('chatBody');
+
 let userName = "";
 let started = false;
-
 let myUid = localStorage.getItem('chat_uid');
 if (!myUid) {
     myUid = 'u_' + Math.random().toString(36).slice(2) + Date.now();
     localStorage.setItem('chat_uid', myUid);
 }
 
-/* ============ CHAT ============ */
+/* ================== CHAT ================== */
 window.startChat = function (name) {
     if (started) return;
     started = true;
@@ -307,7 +276,7 @@ window.startChat = function (name) {
         chatBody.scrollTop = chatBody.scrollHeight;
     });
 
-    listenForIncomingCalls();
+    listenCallSignal();
     setTimeout(() => document.getElementById('messageInput').focus(), 300);
 };
 
@@ -330,7 +299,7 @@ window.sendFile = function (event, type) {
 };
 function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
-/* ============ LOCK / PIN ============ */
+/* ================== LOCK / PIN ================== */
 (function () {
     const CORRECT_PIN = "0171";
     let pin = ""; let unlocked = false;
@@ -399,7 +368,7 @@ function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").
     renderDots();
 })();
 
-/* ============ EMOJI ============ */
+/* ================== EMOJI ================== */
 function toggleEmojiPicker(e) { if (e) e.stopPropagation(); document.getElementById('emojiPicker').classList.toggle('show'); }
 function addEmoji(em) { const i = document.getElementById('messageInput'); i.value += em; i.focus(); }
 document.addEventListener('click', e => {
@@ -408,250 +377,142 @@ document.addEventListener('click', e => {
     if (!p.contains(e.target) && !e.target.closest('.emoji-trigger')) p.classList.remove('show');
 });
 
-/* ============ AGORA CALL ============ */
-let agoraClient = null;
-let localAudioTrack = null;
-let localVideoTrack = null;
-let currentChannel = null;
-let currentCallId = null;
+/* ================== ZEGOCLOUD VOICE/VIDEO CALL ================== */
+let zegoInstance = null;
 let currentCallType = 'audio';
-let isCaller = false;
-let incomingCallData = null;
-let callTimerInterval = null;
-let callStartTime = 0;
-let isMuted = false;
-let camOff = false;
+let isInCall = false;
+let incomingSignalData = null;
 
-/* --- Caller: কল শুরু --- */
+/* --- কল শুরু (Caller) --- */
 window.startCall = async function (type) {
     if (!started) return;
-    if (currentCallId) { alert('ইতিমধ্যে একটা কলে আছেন'); return; }
+    if (isInCall) { alert('ইতিমধ্যে একটা কলে আছেন'); return; }
 
     currentCallType = type;
-    isCaller = true;
 
-    /* Firebase-এ কল রেকর্ড করি */
-    const newCallRef = callsRef.push();
-    currentCallId = newCallRef.key;
-    currentChannel = 'room_' + currentCallId;
-
-    await newCallRef.set({
-        caller: { name: userName, uid: myUid },
+    /* Firebase-এ সিগনাল পাঠাই যাতে অন্যরা জানে */
+    const sigRef = callSignalRef.push();
+    await sigRef.set({
+        caller: userName,
+        callerUid: myUid,
         type: type,
-        channel: currentChannel,
+        roomId: VOICE_ROOM_ID,
         status: 'ringing',
-        createdAt: Date.now()
+        time: Date.now()
     });
 
-    /* UI আপডেট */
-    document.getElementById('activeCallScreen').classList.add('show');
-    if (type === 'audio') {
-        document.getElementById('activeCallScreen').classList.add('audio-mode');
-        document.getElementById('audioName').textContent = 'রিং হচ্ছে...';
-    } else {
-        document.getElementById('activeCallScreen').classList.remove('audio-mode');
-    }
-    document.getElementById('activeCallName').textContent = 'কল করা হচ্ছে...';
-    document.getElementById('activeCallStatus').textContent = 'রিং হচ্ছে...';
-
-    /* কেউ accept করলে join করব */
-    callsRef.child(currentCallId + '/status').on('value', snap => {
-        const s = snap.val();
-        if (s === 'accepted' && isCaller && !agoraClient) {
-            joinAgoraChannel(currentChannel, type);
-        } else if (s === 'rejected') {
-            alert('কল প্রত্যাখ্যান করা হয়েছে');
-            cleanupCall();
-        } else if (s === 'ended') {
-            cleanupCall();
-        }
-    });
+    /* সাথে সাথে কল রুমে join করি */
+    joinZegoRoom(type, sigRef.key);
 };
 
-/* --- Agora Channel Join (Caller + Answerer দুজনই এই ফাংশন ব্যবহার করে) --- */
-async function joinAgoraChannel(channel, type) {
-    try {
-        agoraClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+/* --- Agora/Zego রুমে যোগ দেওয়া --- */
+function joinZegoRoom(type, signalKey) {
+    if (zegoInstance) return;
+    isInCall = true;
 
-        agoraClient.on("user-published", async (user, mediaType) => {
-            await agoraClient.subscribe(user, mediaType);
-            if (mediaType === "video") {
-                user.videoTrack.play("remoteVideo");
+    const container = document.getElementById('zegoContainer');
+    container.classList.add('show');
+
+    /* টোকেন জেনারেট */
+    const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(
+        ZEGO_APP_ID,
+        ZEGO_SERVER_SECRET,
+        VOICE_ROOM_ID,
+        myUid,
+        userName
+    );
+
+    zegoInstance = ZegoUIKitPrebuilt.create(kitToken);
+
+    zegoInstance.joinRoom({
+        container: container,
+        scenario: {
+            mode: ZegoUIKitPrebuilt.GroupCall
+        },
+        showScreenSharingButton: false,
+        showPreJoinView: false,
+        turnOnCameraWhenJoining: type === 'video',
+        turnOnMicrophoneWhenJoining: true,
+        showTextChat: false,
+        showUserList: true,
+        onLeaveRoom: () => {
+            /* কল ছাড়ার পর cleanup */
+            container.classList.remove('show');
+            zegoInstance = null;
+            isInCall = false;
+            if (signalKey) {
+                callSignalRef.child(signalKey + '/status').set('ended');
+                setTimeout(() => callSignalRef.child(signalKey).remove(), 2000);
             }
-            if (mediaType === "audio") {
-                user.audioTrack.play();
-            }
-            updateCallStatus(userName, 'Connected');
-            startCallTimer();
-        });
-
-        agoraClient.on("user-unpublished", (user) => {
-            /* অন্য ইউজার চলে গেলে */
-        });
-
-        agoraClient.on("user-left", () => {
-            endCall();
-        });
-
-        /* চ্যানেলে join (token ছাড়া — Agora Console-এ Testing Mode চালু থাকলে কাজ করবে) */
-        await agoraClient.join(AGORA_APP_ID, channel, null, myUid);
-
-        /* অডিও ট্র্যাক */
-        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-
-        /* ভিডিও ট্র্যাক (শুধু ভিডিও কল হলে) */
-        if (type === 'video') {
-            localVideoTrack = await AgoraRTC.createCameraVideoTrack();
-            localVideoTrack.play("localVideo");
-            await agoraClient.publish([localAudioTrack, localVideoTrack]);
-        } else {
-            await agoraClient.publish([localAudioTrack]);
         }
-
-        updateCallStatus(userName, 'Connected');
-    } catch (err) {
-        console.error(err);
-        alert('Agora কানেকশন ব্যর্থ: ' + err.message + '\n\nAgora Console-এ Testing Mode চালু আছে কিনা চেক করুন।');
-        endCall();
-    }
+    });
 }
 
-/* --- ইনকামিং কল লিসেনার --- */
-let callListenerAttached = false;
-function listenForIncomingCalls() {
-    if (callListenerAttached) return;
-    callListenerAttached = true;
+/* --- ইনকামিং কল সিগনাল লিসেন --- */
+let signalListenerAttached = false;
+function listenCallSignal() {
+    if (signalListenerAttached) return;
+    signalListenerAttached = true;
 
-    callsRef.on('child_added', snap => {
-        const call = snap.val();
-        if (!call || !call.caller) return;
-        if (call.caller.uid === myUid) return;
-        if (call.status !== 'ringing') return;
-        if (currentCallId) return;
+    callSignalRef.on('child_added', snap => {
+        const sig = snap.val();
+        if (!sig || sig.status !== 'ringing') return;
+        if (sig.callerUid === myUid) return;
+        if (isInCall) return;
 
-        incomingCallData = { id: snap.key, ...call };
-        document.getElementById('incomingName').textContent = call.caller.name;
+        /* পুরনো সিগনাল বাদ */
+        if (Date.now() - sig.time > 60000) { callSignalRef.child(snap.key).remove(); return; }
+
+        incomingSignalData = { id: snap.key, ...sig };
+        document.getElementById('incomingName').textContent = sig.caller;
         document.getElementById('incomingType').textContent =
-            call.type === 'video' ? 'Incoming Video Call...' : 'Incoming Audio Call...';
+            sig.type === 'video' ? 'ইনকামিং ভিডিও কল...' : 'ইনকামিং অডিও কল...';
         document.getElementById('incomingOverlay').classList.add('show');
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     });
 
-    callsRef.on('child_changed', snap => {
-        const call = snap.val();
-        if (!call) return;
-        if (snap.key === currentCallId) {
-            if (call.status === 'ended' || call.status === 'rejected') cleanupCall();
-            return;
-        }
-        if (incomingCallData && incomingCallData.id === snap.key && call.status !== 'ringing') {
-            hideIncomingModal();
+    callSignalRef.on('child_changed', snap => {
+        const sig = snap.val();
+        if (!sig) return;
+        if (sig.status === 'ended' || sig.status === 'rejected') {
+            if (incomingSignalData && incomingSignalData.id === snap.key) {
+                hideIncomingModal();
+            }
         }
     });
 }
 
 function hideIncomingModal() {
     document.getElementById('incomingOverlay').classList.remove('show');
-    incomingCallData = null;
+    incomingSignalData = null;
 }
 
-/* --- Answerer: কল গ্রহণ --- */
+/* --- কল গ্রহণ (Answerer) --- */
 window.acceptCall = async function () {
-    if (!incomingCallData) return;
-    const call = incomingCallData;
-    currentCallId = call.id;
-    currentChannel = call.channel;
-    currentCallType = call.type;
-    isCaller = false;
-
+    if (!incomingSignalData) return;
+    const sig = incomingSignalData;
     hideIncomingModal();
 
-    document.getElementById('activeCallScreen').classList.add('show');
-    if (call.type === 'audio') {
-        document.getElementById('activeCallScreen').classList.add('audio-mode');
-        document.getElementById('audioName').textContent = call.caller.name;
-    } else {
-        document.getElementById('activeCallScreen').classList.remove('audio-mode');
-    }
-    updateCallStatus(call.caller.name, 'Connecting...');
+    currentCallType = sig.type;
+    await callSignalRef.child(sig.id + '/status').set('accepted');
 
-    /* Firebase-এ accept mark */
-    await callsRef.child(currentCallId + '/status').set('accepted');
-    await callsRef.child(currentCallId + '/answerer').set({ name: userName, uid: myUid });
-
-    /* Agora-তে join */
-    joinAgoraChannel(currentChannel, call.type);
+    joinZegoRoom(sig.type, sig.id);
 };
 
+/* --- কল প্রত্যাখ্যান --- */
 window.rejectCall = function () {
-    if (incomingCallData) {
-        callsRef.child(incomingCallData.id + '/status').set('rejected');
+    if (incomingSignalData) {
+        callSignalRef.child(incomingSignalData.id + '/status').set('rejected');
+        setTimeout(() => callSignalRef.child(incomingSignalData.id).remove(), 1000);
     }
     hideIncomingModal();
-    cleanupCall();
 };
 
-window.endCall = function () {
-    if (currentCallId) {
-        callsRef.child(currentCallId + '/status').set('ended');
-        setTimeout(() => callsRef.child(currentCallId).remove(), 800);
-    }
-    cleanupCall();
-};
-
-function cleanupCall() {
-    try {
-        if (localAudioTrack) { localAudioTrack.stop(); localAudioTrack.close(); localAudioTrack = null; }
-        if (localVideoTrack) { localVideoTrack.stop(); localVideoTrack.close(); localVideoTrack = null; }
-    } catch (e) {}
-    if (agoraClient) {
-        try { agoraClient.leave(); } catch (e) {}
-        agoraClient = null;
-    }
-    if (callTimerInterval) { clearInterval(callTimerInterval); callTimerInterval = null; }
-    document.getElementById('activeCallScreen').classList.remove('show', 'audio-mode');
-    document.getElementById('incomingOverlay').classList.remove('show');
-    document.getElementById('remoteVideo').innerHTML = '';
-    document.getElementById('localVideo').innerHTML = '';
-    document.getElementById('activeCallStatus').textContent = 'Connecting...';
-    currentCallId = null; currentChannel = null; incomingCallData = null; isCaller = false;
-    isMuted = false; camOff = false;
-    document.getElementById('muteBtn').classList.remove('muted');
-    document.getElementById('camBtn').classList.remove('muted');
-}
-
-function updateCallStatus(name, status) {
-    document.getElementById('activeCallName').textContent = name;
-    document.getElementById('activeCallStatus').textContent = status;
-}
-
-function startCallTimer() {
-    if (callTimerInterval) return;
-    callStartTime = Date.now();
-    callTimerInterval = setInterval(() => {
-        const sec = Math.floor((Date.now() - callStartTime) / 1000);
-        const m = String(Math.floor(sec / 60)).padStart(2, '0');
-        const s = String(sec % 60).padStart(2, '0');
-        document.getElementById('activeCallStatus').textContent = 'Connected • ' + m + ':' + s;
-    }, 1000);
-}
-
-window.toggleMute = function () {
-    if (!localAudioTrack) return;
-    isMuted = !isMuted;
-    localAudioTrack.setEnabled(!isMuted);
-    document.getElementById('muteBtn').classList.toggle('muted', isMuted);
-};
-
-window.toggleCamera = function () {
-    if (!localVideoTrack) return;
-    camOff = !camOff;
-    localVideoTrack.setEnabled(!camOff);
-    document.getElementById('camBtn').classList.toggle('muted', camOff);
-};
-
+/* --- কল থেকে বের হওয়ার আগে cleanup --- */
 window.addEventListener('beforeunload', () => {
-    if (currentCallId) callsRef.child(currentCallId + '/status').set('ended');
+    if (zegoInstance) {
+        try { zegoInstance.leaveRoom(); } catch (e) {}
+    }
 });
 </script>
 </body>
