@@ -316,7 +316,7 @@ function esc(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").
     function renderDots() { dots.forEach((d, i) => d.classList.toggle('filled', i < pin.length)); }
     function wrongPin() {
         lockCard.classList.add('shake');
-        pinMsg.textContent = '❌ ভুল পাসওয়ার্ড!'; pinMsg.classList.remove('good');
+        pinMsg.textContent = '❌ ধুর শালী ভুল পাসওয়ার্ড 😁!'; pinMsg.classList.remove('good');
         dots.forEach(d => d.classList.add('filled'));
         setTimeout(() => { lockCard.classList.remove('shake'); pin = ""; renderDots(); dots.forEach(d => d.classList.remove('ok')); }, 600);
         if (navigator.vibrate) navigator.vibrate(180);
